@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Versus: Ultimate Arena ⚔️</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background: #06060c; color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+        
+        h1 { color: #ff4757; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; text-shadow: 0 0 15px rgba(255, 71, 87, 0.6); font-size: 2rem; text-align: center; }
+        .subtitle { color: #888; margin-bottom: 15px; font-size: 0.9rem; }
+
+        /* Top Controls */
+        .top-controls { display: flex; gap: 10px; width: 100%; max-width: 600px; margin-bottom: 20px; }
+        .search-box { flex: 1; padding: 12px; background: #11111e; border: 1px solid #333; border-radius: 25px; color: #fff; outline: none; font-size: 0.9rem; padding-left: 20px; }
+        .lang-btn { background: #ff4757; color: white; border: none; padding: 0 20px; border-radius: 25px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .lang-btn:hover { background: #ff6b81; }
+
+        /* Battle Ground Layout */
+        .arena { display: flex; flex-direction: column; width: 100%; max-width: 600px; gap: 15px; align-items: center; }
+        
+        .fighter-box { width: 100%; background: #11111e; border: 2px solid #222; border-radius: 15px; padding: 20px; text-align: center; transition: 0.3s; }
+        #box1 { border-left: 5px solid #00d2d3; box-shadow: 0 0 15px rgba(0, 210, 211, 0.1); }
+        #box2 { border-right: 5px solid #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.1); }
+        
+        .vs-text { font-size: 1.8rem; font-weight: bold; color: #ffa502; text-shadow: 0 0 10px rgba(255, 165, 2, 0.5); margin: 5px 0; }
+
+        select { width: 100%; padding: 12px; background: #1c1c2e; color: #fff; border: 1px solid #333; border-radius: 8px; font-size: 1rem; outline: none; cursor: pointer; }
+        
+        /* Fight Button */
+        .fight-btn { background: linear-gradient(135deg, #ff4757, #ff6b81); color: white; border: none; padding: 15px 40px; font-size: 1.3rem; font-weight: bold; border-radius: 30px; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 20px rgba(255, 71, 87, 0.4); transition: 0.3s; text-transform: uppercase; width: 100%; }
+        .fight-btn:hover { transform: scale(1.02); box-shadow: 0 8px 25px rgba(255, 71, 87, 0.6); }
+
+        /* Result Display */
+        .result-screen { display: none; width: 100%; max-width: 600px; background: #1e1e30; border: 2px solid #ffa502; border-radius: 15px; padding: 20px; margin-top: 20px; text-align: center; animation: fadeIn 0.5s ease-in-out; }
+        .winner-title { font-size: 1.5rem; color: #2ed573; font-weight: bold; margin-bottom: 10px; }
+        .battle-log { font-size: 0.95rem; color: #ccc; line-height: 1.6; text-align: justify; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Shake Animation for Battle Effect */
+        .shake { animation: shakeEffect 0.5s infinite; }
+        @keyframes shakeEffect {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(0px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Anime Versus</h1>
+    <p class="subtitle">The Ultimate Arena Simulation</p>
+
+    <div class="top-controls">
+        <input type="text" id="search" class="search-box" placeholder="ক্যারেক্টার ফিল্টার করুন / Search..." oninput="filterCharacters()">
+        <button class="lang-btn" id="langBtn" onclick="toggleLanguage()">EN</button>
+    </div>
+
+    <div class="arena" id="arena">
+        <div class="fighter-box" id="box1">
+            <h3 id="blueCorner" style="color: #00d2d3; margin-bottom: 10px;">ব্লু কর্নার (BLUE CORNER)</h3>
+            <select id="fighter1" onchange="resetResult()"></select>
+        </div>
+
+        <div class="vs-text">V S</div>
+
+        <div class="fighter-box" id="box2">
+            <h3 id="redCorner" style="color: #ff4757; margin-bottom: 10px;">রেড কর্নার (RED CORNER)</h3>
+            <select id="fighter2" onchange="resetResult()"></select>
+        </div>
+
+        <button class="fight-btn" id="fightBtn" onclick="startBattle()">যুদ্ধ শুরু করুন! (FIGHT)</button>
+    </div>
+
+    <div class="result-screen" id="resultScreen">
+        <div class="winner-title" id="winnerText"></div>
+        <p class="battle-log" id="battleLog"></p>
+    </div>
+
+    <script>
+        let currentLang = 'bn';
+
+        // ৫০ জন লিজেন্ডারি ক্যারেক্টারের ডাটাবেজ (পাওয়ার স্ট্যাট + বাংলা/ইংরেজি ব্যাখ্যাসহ)
+        const characters = {
+            "Gojo Satoru": { anime: "JJK", atk: 99, def: 100, spd: 95, bn: "তার 'Infinity' ভেদ করা অসম্ভব ছিল। অসীম শক্তির কারণে সে জয়ী হয়।", en: "His 'Infinity' barrier was impossible to bypass. He won due to his limitless cursed energy." },
+            "Saitama": { anime: "OPM", atk: 100, def: 99, spd: 99, bn: "সে তার চিরচেনা এক ঘুষিতেই প্রতিপক্ষকে উড়িয়ে দিয়েছে!", en: "He completely vaporized his opponent with his trademark single punch!" },
+            "Naruto Uzumaki": { anime: "Naruto", atk: 93, def: 91, spd: 94, bn: "বারিয়ন মোড এবং কুরামার অসীম চক্রের শক্তির সামনে প্রতিপক্ষ টিকতে পারেনি।", en: "The opponent couldn't stand against the raw power of Baryon Mode and Kurama's massive chakra." },
+            "Sukuna": { anime: "JJK", atk: 97, def: 93, spd: 95, bn: "তার 'Malevolent Shrine' ডোমেইন পুরো যুদ্ধক্ষেত্র কেটে টুকরো টুকরো করে দিয়েছে।", en: "His 'Malevolent Shrine' domain expansion slashed and diced the entire battlefield into pieces." },
+            "Eren Yeager": { anime: "AOT", atk: 89, def: 94, spd: 82, bn: "ফাউন্ডিং টাইটানের ক্ষমতা এবং রামব্লিং আর্মির পায়ের নিচে প্রতিপক্ষ পিষে গেছে।", en: "The opponent was crushed beneath the rumbling colossus titans controlled by the Founding Titan." },
+            "Sung Jin-woo": { anime: "Solo Leveling", atk: 98, def: 95, spd: 98, bn: "তার শ্যাডো আর্মি পুরো যুদ্ধক্ষেত্র দখল করে নেয় এবং শ্যাডো মোনার্কের ডার্ক পাওয়ারে জয় আসে।", en: "His Shadow Army overwhelmed the arena, and the dark powers of the Shadow Monarch secured the win." },
+            "Goku": { anime: "Dragon Ball", atk: 99, def: 97, spd: 99, bn: "তার 'Ultra Instinct' মোডের রিফ্লেক্স এবং গড পাওয়ারের সামনে কোনো আক্রমণই কাজ করেনি।", en: "No attack could land against his 'Ultra Instinct' reflexes and god-level divine energy." },
+            "Luffy (Gear 5)": { anime: "One Piece", atk: 95, def: 94, spd: 96, bn: "গিয়ার ৫-এর অকল্পনীয় কল্পনাশক্তি দিয়ে সে যুদ্ধক্ষেত্রকে রবারের মতো বানিয়ে প্রতিপক্ষকে হারিয়ে দেয়।", en: "Using the ridiculous imagination of Gear 5, he turned the environment into rubber and bounced to victory." },
+            "Sasuke Uchiha": { anime: "Naruto", atk: 93, def: 90, spd: 96, bn: "তার রিনেগান এবং পারফেক্ট সুসানোর অমাবস্যার কালো আগুন প্রতিপক্ষকে গ্রাস করেছে।", en: "His Rinnegan tracking and Perfect Susanoo's Amaterasu flames engulfed the opponent completely." },
+            "Itachi Uchiha": { anime: "Naruto", atk: 94, def: 89, spd: 95, bn: "প্রতিপক্ষ যুদ্ধ শুরু হওয়ার আগেই ইতাচির সুকুয়োমি জেনজুতসুর বিভ্রমে হেরে বসেছিল।", en: "Before the battle even began, the opponent fell victim to Itachi's Tsukuyomi Genjutsu illusion." },
+            "Levi Ackerman": { anime: "AOT", atk: 92, def: 85, spd: 99, bn: "তার অতিমানবীয় স্পিড এবং ব্লেডের নিখুঁত কাটার স্টাইলের সামনে প্রতিপক্ষ দাঁড়াতেই পারেনি।", en: "Humanity's strongest soldier sliced through defenses with god-like speed and Ackerman instincts." },
+            "Madara Uchiha": { anime: "Naruto", atk: 98, def: 96, spd: 95, bn: "তার সুসানো এবং আকাশ থেকে উল্কাপাত করার মেটিওর জুতসুর কাছে প্রতিপক্ষ পরাস্ত হয়।", en: "His planetary devastation meteors and majestic destroyer flame jutsus completely wiped out the arena." },
+            "Roronoa Zoro": { anime: "One Piece", atk: 94, def: 89, spd: 92, bn: "তার তিন-তলোয়ারের কিংবদন্তি 'Asura' মোডের এক কোপে পুরো যুদ্ধক্ষেত্র দুই ভাগ হয়ে গেছে।", en: "A single, devastating strike from his Three-Sword Style 'Asura' mode sliced the opponent down." },
+            "Tanjiro Kamado": { anime: "Demon Slayer", atk: 88, def: 88, spd: 90, bn: "হিনোকামি কাগুরার সূর্য ব্রিদিংয়ের তীব্র আগুনে প্রতিপক্ষের সমস্ত ডিফেন্স পুড়ে ছাই হয়ে যায়।", en: "The blazing fire of Hinokami Kagura (Sun Breathing) burned down all enemy defenses." },
+            "Light Yagami": { anime: "Death Note", atk: 99, def: 60, spd: 80, bn: "তার ক্ষুরধার বুদ্ধির চালে প্রতিপক্ষ ফেঁসে যায় এবং ডেথ নোটে নাম লেখা মাত্রই হার মেনে নেয়।", en: "His absolute mastermind strategy outsmarted the opponent, writing their fate in the Death Note." },
+            "L Lawliet": { anime: "Death Note", atk: 96, def: 70, spd: 85, bn: "তার অসাধারণ ডিডাক্টিভ গোয়েন্দা বুদ্ধি দিয়ে প্রতিপক্ষের সমস্ত প্ল্যান আগে থেকেই ব্যর্থ করে দেয়।", en: "His world-class analytical mind predicted and countered every single move of the opponent." },
+            "Killua Zoldyck": { anime: "HxH", atk: 91, def: 86, spd: 98, bn: "তার 'Godspeed' মোডের লাইটনিং স্পিড এবং অ্যাসাসিন নখের ধারালো আক্রমণে খেলা শেষ হয়।", en: "His 'Godspeed' lightning movement and lethal assassin claws ended the match in a flash." },
+            "Gon Freecss (Adult)": { anime: "HxH", atk: 97, def: 92, spd: 94, bn: "তার সর্বোচ্চ ত্যাগের মাধ্যমে জাগ্রত হওয়া ভয়ানক জাজান কেন শক্তি প্রতিপক্ষকে ধুলোয় মিশিয়ে দেয়।", en: "His monstrous adult form powered by pure aura and Jajanken completely pulverized the enemy." },
+            "Rimuru Tempest": { anime: "Slime", atk: 98, def: 98, spd: 96, bn: "গ্রেট সেজ-এর প্রেডিকশন এবং প্রিডেটর ক্ষমতা দিয়ে প্রতিপক্ষের পুরো শক্তি গিলে ফেলেছে স্লাইম রাজা।", en: "The Demon Lord slime analyzed the enemy with Great Sage and absorbed their attacks via Predator." },
+            "All Might": { anime: "MHA", atk: 95, def: 93, spd: 91, bn: "তার শেষ শক্তির ইউনাইটেড স্টেটস অফ স্ম্যাশের প্রচণ্ড বাতাসে প্রতিপক্ষ মাঠের বাইরে ছিটকে গেছে।", en: "A massive 'United States of Smash' generated enough shockwave to blow the opponent away." },
+            "Meliodas": { anime: "7 Sins", atk: 96, def: 95, spd: 93, bn: "প্রতিপক্ষের নিজস্ব সেরা অ্যাটাকটিকে সে 'Full Counter' করে দ্বিগুণ শক্তিতে ফিরিয়ে দিয়ে জয়ী হয়।", en: "He used 'Full Counter' to deflect the opponent's strongest attack back at them with double power." },
+            "Asta": { anime: "Black Clover", atk: 93, def: 87, spd: 93, bn: "তার এন্টি-ম্যাজিক তলোয়ার প্রতিপক্ষের সমস্ত অলৌকিক এবং জাদুকরী ক্ষমতা এক পলকে বাতিল করে দেয়।", en: "His Anti-Magic swords instantly negated and sliced through all supernatural abilities of the enemy." },
+            "Yami Sukehiro": { anime: "Black Clover", atk: 94, def: 90, spd: 89, bn: "তার ডার্ক ম্যাজিক ডাইমেনশন স্ল্যাশ সরাসরি স্পেস বা স্থান কেটে প্রতিপক্ষকে কুপোকাত করেছে।", en: "His Dark Magic: Dimension Slan cut through the fabric of space itself to defeat the rival." },
+            "Ken Kaneki": { anime: "Tokyo Ghoul", atk: 92, def: 91, spd: 92, bn: "তার কাগুনের বিধ্বংসী রূপ এবং ঘৌলের অবিশ্বাস্য হিলিং পাওয়ারের কারণে সে যুদ্ধে টিকে যায়।", en: "His centipede kagune onslaught and hyper-regeneration capabilities secured his survival and win." },
+            "Denji (Chainsaw Man)": { anime: "CSM", atk: 93, def: 89, spd: 90, bn: "তার শরীরের রক্তপিপাসু চেইনস বা করাতগুলো প্রতিপক্ষের ডিফেন্সকে নির্মমভাবে কেটে ফেলেছে।", en: "His chaotic, blood-fueled chainsaws ripped through the opponent's guard without mercy." },
+            "Makima": { anime: "CSM", atk: 96, def: 96, spd: 92, bn: "তার কন্ট্রোল বা বশ করার অদ্ভুত ক্ষমতার সামনে প্রতিপক্ষ নিজের অনিচ্ছায় আত্মসমর্পণ করে।", en: "The Control Devil dominated the opponent's mind, forcing an absolute and absolute surrender." },
+            "Shanks": { anime: "One Piece", atk: 97, def: 93, spd: 96, bn: "তার মারাত্মক কনকারার হাকির (Divine Departure) এক প্রেসারে প্রতিপক্ষ জ্ঞান হারিয়ে ফেলে।", en: "His monstrous Conqueror's Haki and a single 'Divine Departure' slash ended the bout instantly." },
+            "Mihawk": { anime: "One Piece", atk: 96, def: 92, spd: 94, bn: "তার কালো তলোয়ার 'Yoru'-র একটি সাধারণ বাতাসে পুরো যুদ্ধক্ষেত্রের বরফ ও পাহাড় কেটে যায়।", en: "The world's strongest swordsman delivered a flawless, clean cut with his Black Blade Yoru." },
+            "Kaido": { anime: "One Piece", atk: 98, def: 99, spd: 88, bn: "ড্রাগন মোডের বোরো ব্রেথ এবং তার অজেয় শক্ত শরীরের ডিফেন্স প্রতিপক্ষ ভাঙতেই পারেনি।", en: "The strongest creature's dragon scales were impenetrable, and his Thunder Bagua crushed all." },
+            "Gohoan (Beast)": { anime: "Dragon Ball", atk: 97, def: 95, spd: 97, bn: "তার ভেতর লুকিয়ে থাকা বন্য মাকানকোসানপো এনার্জি বিম প্রতিপক্ষকে ভেদ করে চলে গেছে।", en: "His newly awakened Beast form unleashed a Special Beam Cannon that pierced through everything." },
+            "Vegeta": { anime: "Dragon Ball", atk: 98, def: 95, spd: 98, bn: "তার আল্ট্রা ইগো মোডের জেদ এবং ফাইনাল ফ্ল্যাশ বিস্ফোরণ পুরো এরিনাকে কাঁপিয়ে দেয়।", en: "His Ultra Ego pride scaled higher with damage, finalizing the match with a massive Final Flash." },
+            "Zenitsu Agatsuma": { anime: "Demon Slayer", atk: 90, def: 80, spd: 100, bn: "ঘুমন্ত অবস্থায় তার থান্ডার ব্রিদিংয়ের প্রথম ফর্মের গতি চোখ দিয়ে দেখাও অসম্ভব ছিল।", en: "While asleep, his Thunder Breathing: God Speed was too fast for the naked eye to track." },
+            "Minato Namikaze": { anime: "Naruto", atk: 92, def: 86, spd: 100, bn: "ফ্লাইং রাইজিন জুতসু দিয়ে সে আলোর গতিতে প্রতিপক্ষের পেছনে গিয়ে রাসিনগান মেরে দেয়।", en: "The Yellow Flash teleported instantly behind the opponent, landing a critical Rasengan." },
+            "Pain (Nagato)": { anime: "Naruto", atk: 95, def: 92, spd: 87, bn: "তার 'Shinra Tensei' আকর্ষন ও বিকর্ষণ ক্ষমতার ধাক্কায় প্রতিপক্ষ ছিটকে ধুলোয় মিশে গেছে।", en: "His Almighty Push (Shinra Tensei) repelled and shattered every structure and attack." },
+            "Kakashi Hatake": { anime: "Naruto", atk: 90, def: 88, spd: 91, bn: "কপি নিনজা তার কামুই চিরিঙ্গান দিয়ে প্রতিপক্ষের মূল আক্রমণটিকেই অন্য ডাইমেনশনে পাঠিয়ে দেয়।", en: "The Copy Ninja used Kamui to warp the enemy's ultimate attack into another dimension." },
+            "Hisoka Morow": { anime: "HxH", atk: 91, def: 88, spd: 92, bn: "তার বাঞ্জি গামের আঠালো ও ইলাস্টিক ট্রিকসের ফাঁদে ফেলে সে প্রতিপক্ষকে নিয়ে ছিনিমিনি খেলেছে।", en: "His Bungee Gum properties of rubber and gum set a perfect deadly trap for the opponent." },
+            "Escanor": { anime: "7 Sins", atk: 99, def: 94, spd: 85, bn: "ঠিক দুপুর ১২টার 'The One' মোডের সূর্যের মতো গনগনে ক্রুয়েল সান শক্তির সামনে প্রতিপক্ষ গলে গেছে।", en: "At high noon, his 'The One' divine state melted everything with the heat of a Cruel Sun." },
+            "Yuno Grinberryall": { anime: "Black Clover", atk: 92, def: 89, spd: 95, bn: "উইন্ড স্পিরিট অ্যাসিমিলেশন এবং স্পিরিট অফ জিওন তলোয়ারের ঝড়ে সে জয়লাভ করে।", en: "His Spirit Dive and Spirit of Zephyr sword whipped up a hurricane that tore through defenses." },
+            "Bakugo Katsuki": { anime: "MHA", atk: 92, def: 86, spd: 93, bn: "তার হাতের ঘামের হাউইটজার ইমপ্যাক্ট বড় বড় বিস্ফোরণ ঘটিয়ে প্রতিপক্ষকে কাবু করে।", en: "His sweat-induced nitro explosions and Howitzer Impact blasted the enemy into submission." },
+            "Todoroki Shoto": { anime: "MHA", atk: 91, def: 91, spd: 88, bn: "একপাশে বরফ দিয়ে জমিয়ে অন্যপাশের তীব্র আগুনের শিখা দিয়ে সে যুদ্ধ শেষ করে।", en: "He froze the opponent solid before vaporizing the ice with his left side's blazing fire." },
+            "Deku (Midoriya)": { anime: "MHA", atk: 94, def: 91, spd: 94, bn: "ওয়ান ফর অল ১০০% এবং গিয়ার শিফটের কম্বিনেশনে প্রতিপক্ষকে বাতাসে ভাসিয়ে পাঞ্চ মারে।", en: "One For All 100% paired with Gear Shift delivered a bullet-fast smash that secured victory." },
+            "Whitebeard": { anime: "One Piece", atk: 98, def: 98, spd: 85, bn: "তার গুর গুর ডেভিল ফ্রুটের ভূমিকম্পের কম্পনে পুরো সমুদ্র এবং এরিনা কেঁপে ভেঙে পড়ে।", en: "The Strongest Man in the world cracked the very air, generating tsunamis and earthquakes." },
+            "Broly": { anime: "Dragon Ball", atk: 98, def: 96, spd: 96, bn: "তার কিংবদন্তি আনকন্ট্রোলড সায়ান রাগ ও সীমাহীন পাওয়ারের তাণ্ডবে প্রতিপক্ষ ম্যাচ হেরে যায়।", en: "His infinite Legendary Super Saiyan wrath scaled too fast, crushing the opponent with raw aura." },
+            "Beerus": { anime: "Dragon Ball", atk: 100, def: 98, spd: 99, bn: "সে শুধু আঙুল উঁচিয়ে 'Hakai' বা ধ্বংস শব্দটা উচ্চারণ করতেই প্রতিপক্ষের অস্তিত্ব মুছে যায়।", en: "With a single tap and the word 'Hakai', the opponent's entire existence turned to dust." },
+            "Gara of the Sand": { anime: "Naruto", atk: 90, def: 95, spd: 86, bn: "তার বালুর দুর্ভেদ্য ডিফেন্স এবং 'Sand Tsunami' প্রতিপক্ষকে মাটির নিচে চাপা দিয়ে দেয়।", en: "His absolute sand defense shielded him perfectly while his Sand Tomb crushed the foe." },
+            "Aki Hayakawa": { anime: "CSM", atk: 87, def: 85, spd: 88, bn: "ফক্স ডেভিল এবং কার্স ডেভিলের তলোয়ারের ভবিষ্যৎ দেখার ক্ষমতা তাকে জয় এনে দিয়েছে।", en: "The Future Devil's foresight and the Fox Devil's summon bit down on the opponent's strategy." },
+            "Power (Blood Devil)": { anime: "CSM", atk: 89, def: 82, spd: 89, bn: "প্রতিপক্ষের শরীরের রক্তকে নিজের নিয়ন্ত্রণে নিয়ে ব্লাড স্পিয়ার বা তলোয়ার বানিয়ে সে ফাইট জিতে নেয়।", en: "Manipulating blood to form deadly spears, she punctured through the opponent's strategy." },
+            "Tengen Uzui": { anime: "Demon Slayer", atk: 91, def: 88, spd: 95, bn: "সাউন্ড ব্রিদিংয়ের মিউজিক্যাল স্কোর টেকনিক দিয়ে সে প্রতিপক্ষের লড়াইয়ের গতি ধরে ফেলে কেটে ফেলে।", en: "His Sound Breathing: Musical Score read the opponent's attack patterns like a sheet of music." },
+            "Rengoku Kyojuro": { anime: "Demon Slayer", atk: 92, def: 89, spd: 92, bn: "তার ফ্লেম ব্রিদিংয়ের নবম ফর্ম 'Purgatory'র জ্বলন্ত ড্রাগন অ্যাটাক প্রতিপক্ষকে ছাই বানায়।", en: "His Spirit of Fire: Ninth Form 'Esoteric' engulfed the ring in a beautiful, winning blaze." },
+            "Anos Voldigoad": { anime: "Misfit", atk: 100, def: 100, spd: 98, bn: "তার হার্টবিট বা হৃদস্পন্দনের আওয়াজ সহ্য করতে না পেরেই প্রতিপক্ষ কান ফেটে মারা যায়।", en: "The Demon King of Tyranny defeated the opponent simply by the sound of his own heartbeat." }
+        };
+
+        // ড্রপডাউন মেনু ডাটা দিয়ে ফিল্ডআপ করা
+        function initSelectors(dataList = Object.keys(characters)) {
+            const f1 = document.getElementById('fighter1');
+            const f2 = document.getElementById('fighter2');
+            
+            let options = "";
+            dataList.forEach(name => {
+                options += `<option value="${name}">${name} (${characters[name].anime})</option>`;
+            });
+            
+            f1.innerHTML = options || `<option>No character found</option>`;
+            f2.innerHTML = options || `<option>No character found</option>`;
+            
+            if (dataList.length > 1) f2.selectedIndex = 1; // Fighter 2 তে দ্বিতীয় ক্যারেক্টার ডিফল্ট রাখা
+        }
+
+        // সার্চ এবং ফিল্টার সিস্টেম
+        function filterCharacters() {
+            const searchVal = document.getElementById('search').value.toLowerCase();
+            const filteredNames = Object.keys(characters).filter(name => 
+                name.toLowerCase().includes(searchVal) || characters[name].anime.toLowerCase().includes(searchVal)
+            );
+            initSelectors(filteredNames);
+            resetResult();
+        }
+
+        // ভাষা পরিবর্তন (Toggle Language)
+        function toggleLanguage() {
+            const btn = document.getElementById('langBtn');
+            const bCorner = document.getElementById('blueCorner');
+            const rCorner = document.getElementById('redCorner');
+            const fBtn = document.getElementById('fightBtn');
+
+            if (currentLang === 'bn') {
+                currentLang = 'en';
+                btn.innerText = 'বাং';
+                bCorner.innerText = 'BLUE CORNER';
+                rCorner.innerText = 'RED CORNER';
+                fBtn.innerText = 'FIGHT';
+            } else {
+                currentLang = 'bn';
+                btn.innerText = 'EN';
+                bCorner.innerText = 'ব্লু কর্নার (BLUE CORNER)';
+                rCorner.innerText = 'রেড কর্নার (RED CORNER)';
+                fBtn.innerText = 'যুদ্ধ শুরু করুন! (FIGHT)';
+            }
+            resetResult();
+        }
+
+        function resetResult() {
+            document.getElementById('resultScreen').style.display = 'none';
+        }
+
+        // ব্যাটল শুরু এবং ভাইব্রেশন ইফেক্ট
+        function startBattle() {
+            const name1 = document.getElementById('fighter1').value;
+            const name2 = document.getElementById('fighter2').value;
+            const arena = document.getElementById('arena');
+            const resScreen = document.getElementById('resultScreen');
+
+            if (!characters[name1] || !characters[name2] || name1 === name2) {
+                alert(currentLang === 'bn' ? "দয়া করে দুজন আলাদা ফাইটার সিলেক্ট করুন!" : "Please select two different fighters!");
+                return;
+            }
+
+            // মোবাইল ভাইব্রেশন হ্যাপটিক ফিডব্যাক (যদি ডিভাইস সাপোর্ট করে)
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]);
+            }
+
+            // ফাইট অ্যানিমেশন (স্ক্রিন কাঁপবে)
+            arena.classList.add('shake');
+            resScreen.style.display = 'none';
+
+            setTimeout(() => {
+                arena.classList.remove('shake');
+                calculateWinner(name1, name2);
+            }, 1000); 
+        }
+
+        // বিজয়ী নির্ধারণের মূল লজিক
+        function calculateWinner(p1, p2) {
+            const c1 = characters[p1];
+            const c2 = characters[p2];
+
+            // পাওয়ার হিসাব + সামান্য র্যান্ডম লাক ফ্যাক্টর
+            const score1 = (c1.atk * 1.2) + (c1.def * 0.8) + (c1.spd * 1.0) + (Math.random() * 15);
+            const score2 = (c2.atk * 1.2) + (c2.def * 0.8) + (c2.spd * 1.0) + (Math.random() * 15);
+
+            let winner = "";
+            let reason = "";
+
+            if (score1 > score2) {
+                winner = p1;
+                reason = currentLang === 'bn' ? c1.bn : c1.en;
+            } else {
+                winner = p2;
+                reason = currentLang === 'bn' ? c2.bn : c2.en;
+            }
+
+            const winPrefix = currentLang === 'bn' ? `🏆 বিজয়ী: ${winner} 🎉` : `🏆 WINNER: ${winner} 🎉`;
+            
+            document.getElementById('winnerText').innerText = winPrefix;
+            document.getElementById('battleLog').innerText = reason;
+            document.getElementById('resultScreen').style.display = 'block';
+            
+            // উইনার ঘোষণার পর আবার একটা ফাইনাল লং ভাইব্রেশন
+            if (navigator.vibrate) {
+                navigator.vibrate(300);
+            }
+        }
+
+        // পেজ লোড হলে সিলেক্টর চালু হবে
+        initSelectors();
+    </script>
+</body>
+</html>
